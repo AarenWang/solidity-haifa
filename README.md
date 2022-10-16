@@ -10,7 +10,7 @@ call()保证可重入性(re-entrancy guard)，推荐使用call方法
 
 合约至少要实现以下两个方法其中一个，才能接受Ether
 - receive() external payable
-- fallback() external payable
+- fallback() external payable  
 receive()方法在msg.data为空时调用，否则调用fallback()方法
 
 接收Ether合约 [ReceiveEther.sol](contracts/basic-learning/transfer/ReceiveEther.sol)
