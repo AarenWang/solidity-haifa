@@ -1,5 +1,6 @@
 
 # Solidity学习笔记和源码
+[TOC]
 
 ### 发送ETH原生代币
 Solidity通过以下三种方式发送Ether到其它合约
@@ -86,7 +87,7 @@ contract SendEther {
 - 开发合约项目，将接口和实现分离，接口文件之定义接口合约
 
 接口合约使用**interface**关键字定义
-```
+```solidity
  interface MyConstractInteface{
 
     //接口合约里抽象方法定义
@@ -97,7 +98,7 @@ contract SendEther {
 ```
 
 通过接口合约调用实际合约
-```
+```solidity
   //实际实现合约的地址
   address public realyAddress;
   
@@ -161,13 +162,85 @@ contract CallInterface {
 
 ```
 
+### 合约调用 Call与Delegatecall
+以太坊为代表的区块链dAPP生态繁荣，离不改智能合约的可组合性，可组合性能力来自最基础的合约调用能力
+Solidity提供两种合约调用方式
+- 方式一 已经合约的ABI，通过合约名称和方法调用
+- 通过低层次call函数调用
 
+我们先学习通过合约名称加合约方法名来调用合约
 
-# Hardhat Useing 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
+被调用合约 [Call.sol](contracts/basic-learning/contract-call/Call.sol)
+```solidity
+contract Callee {
+    uint256 private _x = 0; // 状态变量_x
+
+    uint private _value =  0;
+
+    // 收到eth的事件，记录amount和gas
+    event EtherReceive(uint amount, uint gas);
+    
+    // 返回合约ETH余额
+    function getBalance() view public returns(uint) {
+        return address(this).balance;
+    }
+
+    // 可以调整状态变量_x的函数
+    function setX(uint x) external payable returns(uint) {
+        _x = x;
+        return _x;
+        
+    }
+
+     // 可以调整状态变量_x的函数，并且可以往合约转ETH (payable)
+    function setXandSendEther(uint x) external payable returns(uint,uint) {
+        _x = x;
+        _value = msg.value;
+       
+         // 如果转入ETH，则释放Log事件
+        //if(msg.value > 0){
+            emit EtherReceive(_value, gasleft());
+        //}
+
+        return (x,_value);
+    }
+
+    // 读取_x
+    function getX() external view returns(uint x){
+        x = _x;
+    }
+}
+```
+
+调用者合约 [Call.sol](contracts/basic-learning/contract-call/Call.sol)
+```solidity
+/**
+ * 调用者合约
+ */
+contract Caller {
+
+    constructor() payable{
+
+    };
+
+    function setX(Callee _callee, uint _x) public {
+        uint x = _callee.setX(_x);
+    }
+
+    /**
+    *  只设置X
+    */
+    function setXFromAddress(address _addr, uint _x) public {
+        Callee callee = Callee(_addr);
+        callee.setX(_x);
+    }
+
+    /**
+     * 设置x并发送Ether
+     */
+    function setXandSendEther(Callee _callee, uint _x) public payable {
+        (uint x, uint value) = _callee.setXandSendEther{value: msg.value}(_x);
+    }
+}
+
 ```
