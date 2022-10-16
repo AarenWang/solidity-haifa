@@ -35,9 +35,9 @@
   MyConstractInteface(address).inc(); //通过接口合约名称直接调用实现合约
 ```
 
-一个个最简单的计数器合约例子  [interface.sol](contracts/basic-learning/interface.sol)
+一个最简单的计数器合约例子  [interface.sol](contracts/basic-learning/interface.sol)
 
-```
+```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 
