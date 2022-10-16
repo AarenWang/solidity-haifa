@@ -259,7 +259,10 @@ call调用格式
 ```
 
 abi.encodeWithSignature参数格式如下
-```abi.encodeWithSignature(string memory signature, ...) returns (bytes memory):```
+```solidity
+   abi.encodeWithSignature(string memory signature, ...) returns (bytes memory):
+   abi.encodeWithSignature("函数签名", 逗号分隔的具体参数)
+```
 
 比如调用函数```function foo(string memory _message, uint _x)的```encodeWithSignature调用参数为
 
@@ -277,4 +280,63 @@ abi.encodeWithSignature("foo(string,uint256)", "call foo", 123)
 
 
 #### Delegatecall
+与```call``` 类似 ```delegatecall``` 也是Address类型的的低层次函数
+当用户发起智能合约调用，从合约A调用合约B时
+- 合约A用call()来调用合约B，则合约B的msg.sender为合约A地址，msg.data是合约A发送给合约B的data
+- 合约A用delegatecall()来调用合约B，则合约B的msg.sender是用户地址，msg.data是用户设置的data
 
+
+示例
+```solidity
+// 被调用的合约C
+contract C {
+    uint256 public num;
+    address public sender;
+
+    function setNum(uint256 _num) public payable {
+        num = _num;
+        sender = msg.sender;
+    }
+
+    function getNum() public view returns(uint256) {
+        return num;
+    }
+}
+```
+
+
+```solidity 
+contract B {
+    uint public num;
+    address public sender;
+
+    // 通过call来调用C的setNum()函数，将改变合约C里的状态变量
+    function callSetNum(address _addr, uint _num) external payable{
+        // 通过call来调用
+        (bool success, bytes memory data) = _addr.call(
+            abi.encodeWithSignature("setNum(uint256)", _num)
+        );
+    }
+
+
+    // 通过delegatecall来调用C的setNum()函数，将改变合约C里的状态变量
+    function delegatecallSetNum(address _addr, uint _num) external payable{
+        // delegatecall setNum()
+        (bool success, bytes memory data) = _addr.delegatecall(
+            abi.encodeWithSignature("setNum(uint256)", _num)
+        );
+    }
+}
+```
+
+什么场景下使用delegatecall调用
+**可更新的代理合约场景**  
+代理合约作为整个智能合约的门面(facade)，代理合约owner可以设置目标合约的地址，owner更新合约逻辑重新部署之后，更新目标合约地址
+外部合约同步与代理(Proxy)合约交互，交互地址和接口保持不变，代理合约调用(delegatecall)新的合约，实现智能合约更新升级
+
+
+**如何安全使用delegatecall**
+//TODO
+
+
+ 
