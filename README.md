@@ -1,6 +1,76 @@
 
 # Solidity学习笔记和源码
 
+### 发送ETH原生代币
+Solidity通过以下三种方式发送Ether到其它合约
+- transfer()函数，消耗2300 gas，碰到错误会throw error
+- send 消耗2300 gas，返回布尔值
+- call 返回bool
+call()保证可重入性(re-entrancy guard)，推荐使用call方法
+
+合约至少要实现以下两个方法其中一个，才能接受Ether
+- receive() external payable
+- fallback() external payable
+receive()方法在msg.data为空时调用，否则调用fallback()方法
+
+接收Ether合约 [ReceiveEther.sol](contracts/basic-learning/transfer/ReceiveEther.sol)
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.3;
+
+contract ReceiveEther {
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {
+        
+    }
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
+
+    function getBalance() public view returns (uint) {
+        return address(this).balance;
+    }
+
+}
+
+```
+
+
+发送Ether合约 [SendEther.sol](contracts/basic-learning/transfer/SendEther.sol)
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.3;
+
+contract SendEther {
+
+    //构造函数加payable，方便创建合约时转入一笔ETH 
+    constructor() payable{
+        
+    } 
+     // amount单位是wei
+     function sendViaTransfer(address payable _to, uint amount) public payable {
+        // transfer()函数已经不在推荐用来发送Ether
+        //_to.transfer(msg.value);
+        _to.transfer(amount);
+    }
+
+    function sendViaSend(address payable _to) public payable {
+        // 通过send()函数发送ether，返回布尔值表示成功或失败 
+        // 该函数不再推荐用来发送Ether
+        bool sent = _to.send(msg.value);
+        require(sent, "Failed to send Ether");
+    }
+
+    function sendViaCall(address payable _to) public payable {
+        // 通过返回布尔值表示是否发送成功
+        // 当前推荐使用call()函数来发送Ether
+        (bool sent, bytes memory data) = _to.call{value: msg.value}("");
+        require(sent, "Failed to send Ether");
+    }
+}
+```
+
+
 ### 接口合约
 和Java等面向对象编程语言一样，Solidity提供抽象合约和接口合约能力，我们先谈谈接口合约
 安装Solidity要求接口合约必须
