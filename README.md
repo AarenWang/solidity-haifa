@@ -170,7 +170,7 @@ Solidity提供两种合约调用方式
 
 我们先学习通过合约名称加合约方法名来调用合约
 
-被调用合约 [Call.sol](contracts/basic-learning/contract-call/Call.sol)
+被调用合约 [Call.sol](contracts/basic-learning/contract-call/contract_call.sol)
 ```solidity
 contract Callee {
     uint256 private _x = 0; // 状态变量_x
@@ -212,7 +212,7 @@ contract Callee {
 }
 ```
 
-调用者合约 [Call.sol](contracts/basic-learning/contract-call/Call.sol)
+调用者合约 [Call.sol](contracts/basic-learning/contract-call/contract_call.sol)
 ```solidity
 /**
  * 调用者合约
@@ -244,3 +244,37 @@ contract Caller {
 }
 
 ```
+
+
+#### Call
+**call** 是address类型的低级成员函数，它用来与其他合约交互。它的返回值为```(bool, data)```，分别对应call是否成功以及目标函数的返回值。
+- ```call```是solidity官方推荐的通过触发```fallback```或```receive```函数发送ETH的方法。
+- 不推荐用```call```来调用另一个合约，call是一个非常低层方法，容易出错。推荐的方法仍是声明合约变量后调用函数
+- 当我们不知道对方合约的源代码或ABI，就没法生成合约接口；这时，我们仍可以通过call构造合约调用
+
+call调用格式
+```solidity
+ address.call{value:msg.value}(encode_data)
+ //value为发送的Ether，encode_data是经过编码的十六进制数据
+```
+
+abi.encodeWithSignature参数格式如下
+```abi.encodeWithSignature(string memory signature, ...) returns (bytes memory):```
+
+比如调用函数```function foo(string memory _message, uint _x)的```encodeWithSignature调用参数为
+
+```solidity
+abi.encodeWithSignature("foo(string,uint256)", "call foo", 123)
+```
+
+参数"foo(string,uint256)"为函数签名，"call foo"为被调用函数第一个参数message，123为被调用函数第二个参数x
+
+
+更多abi.encode函数参考 [abi-encoding-and-decoding-functions](https://docs.soliditylang.org/en/v0.8.17/units-and-global-variables.html?highlight=abi.encodeWithSignature#abi-encoding-and-decoding-functions)
+
+[Address Call函数例子](contracts/basic-learning/contract-call/call.sol)
+
+
+
+#### Delegatecall
+
