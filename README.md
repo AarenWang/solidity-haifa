@@ -2,6 +2,7 @@
 # Solidity学习笔记和源码
 [TOC]
 
+
 ### 发送ETH原生代币
 Solidity通过以下三种方式发送Ether到其它合约
 - transfer()函数，消耗2300 gas，碰到错误会throw error

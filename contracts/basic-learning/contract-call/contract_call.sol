@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
-
 /**
  * 被调用的合约
  */
@@ -51,9 +48,9 @@ contract Callee {
  */
 contract Caller {
 
-    constructor() payable{
-
-    };
+     constructor() payable {
+        
+    }
 
     function setX(Callee _callee, uint _x) public {
         uint x = _callee.setX(_x);
