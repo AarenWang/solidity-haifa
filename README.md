@@ -308,24 +308,30 @@ contract C {
 
 ```solidity 
 contract B {
-    uint public num;
+    
+    uint256 public num;
     address public sender;
 
     // 通过call来调用C的setNum()函数，将改变合约C里的状态变量
     function callSetNum(address _addr, uint _num) external payable{
+        num = _num;
+        sender = msg.sender;
         // 通过call来调用
         (bool success, bytes memory data) = _addr.call(
             abi.encodeWithSignature("setNum(uint256)", _num)
         );
+       
     }
-
 
     // 通过delegatecall来调用C的setNum()函数，将改变合约C里的状态变量
     function delegatecallSetNum(address _addr, uint _num) external payable{
+        num = _num;
+        sender = msg.sender;
         // delegatecall setNum()
         (bool success, bytes memory data) = _addr.delegatecall(
             abi.encodeWithSignature("setNum(uint256)", _num)
         );
+
     }
 }
 ```
@@ -340,4 +346,71 @@ contract B {
 //TODO
 
 
- 
+ ### 参数校验 require 和 assert
+Solidity提供了两个用于校验函数```require```和```assert```，两个函数都是不满足校验条件，则抛出异常或错误，但有很大区别
+assert函数创建类为```Panic(unit256)```的error type，assert必须使用在内部错误和检查不变性(check invariants)
+
+require函数用于入参校验和校验外部合约调用的返回值，如果校验不满足条件，则抛出```Error(String)```
+除了require函数抛出Error,还有以下场景抛出```Error(String)```：
+1. 调用```require(x)```,当条件x位false时
+2. 使用```revert()```或```revert("description")```
+3. 调用外部合约，对应的代码不存在(包括合约不存在，调用方法不存在)
+4. 通过公开的合约函数接收Ether，但是函数没有用**payable**修饰(包括构造函数和falllback函数)
+5. 通过公开的getter合约函数接收Ether
+
+下面的例子用require校验输入，用assert进行内部错误检查
+```solidity
+// SPDX-License-Identifier: GPL-3.0 
+pragma solidity >=0.5.0 <0.9.0;
+contract Sharer {
+
+    function sendHalf(address payable addr) public payable returns (uint balance) { 
+        require(msg.value % 2 == 0, "Even value required."); 
+        uint balanceBeforeTransfer = address(this).balance; 
+        addr.transfer(msg.value / 2); 
+        // Since transfer throws an exception on failure and 
+        // cannot call back here, there should be no way for us to 
+        // still have half of the money. 
+        assert(address(this).balance == balanceBeforeTransfer - msg.value / 2); 
+        return address(this).balance;
+    }
+}
+```
+如果函数执行过程发送Panic或Error,则EVM会回滚执行过程修改的状态，回滚到合约方法执行前的状态
+
+ ### 流程回滚 revert函数
+ 可用使用revert语句或revert函数触发流程回滚。
+ revert语句接收个性化错误```revert CustomError(arg1,arg2)```
+
+ 同时solidity也保留了兼容的revert函数
+ ```
+  revert(); 或 revert("description");
+ ```
+
+错误信息会传递给调用者，调用者可以捕获错误信息,```revert()```返回的错误信息为空，而```revert("description")```则返回```Error(string)```错误。
+使用个性化错误类型比使用revert("description")消耗更少的gas，只有4个字节
+
+revert使用例子
+```solidity
+contract RevertTest{
+    address private owner;
+    uint private _num;
+
+    constructor(){
+        owner = msg.sender;
+    }
+
+    function setNum(uint num) public {
+        if(msg.sender != owner){
+            revert CallByOtherError(msg.sender);
+        }
+        _num = num;
+    }
+
+    error CallByOtherError(address call);
+}
+```
+
+ ### 使用try catch 捕获异常流程 
+
+
